@@ -7,6 +7,9 @@
 #include <cassert>
 #include <sys/types.h>
 
+/*
+ * Store x, y values in ordered grid of unique values
+ */
 class CXYVals {
  public:
   struct Polygon {
@@ -78,6 +81,12 @@ class CXYVals {
   std::vector<double> yvals_;
 };
 
+//------
+
+/*
+ * track inside state of each cell of x, y grid to perform functions
+ * on rectilinear poylgons.
+ */
 class CXYValsInside : public CXYVals {
  public:
   enum {
@@ -145,6 +154,7 @@ class CXYValsInside : public CXYVals {
   void clear();
 
   bool getPolygons(Polygons &polygons, bool check_consistent=false) const;
+  bool getPolygons(InsideValue inside_val, Polygons &polygons, bool check_consistent=false) const;
 
   bool getPolygon(Polygon &polygon, bool check_consistent=false) const;
   bool getPolygon(InsideValue inside_val, Polygon &polygon, bool check_consistent=false) const;
@@ -164,11 +174,15 @@ class CXYValsInside : public CXYVals {
 
   void print(std::ostream &os) const;
 
+  static bool unitTest(const std::string &args="");
+
  private:
   void initMem();
 
   bool fillH();
   bool fillV();
+
+  bool fillHoles();
 
   void fillDisconnected();
 

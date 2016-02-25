@@ -13,6 +13,18 @@ main(int argc, char **argv)
 {
   QApplication app(argc, argv);
 
+  for (int i = 1; i < argc; ++i) {
+    std::string arg(argv[i]);
+
+    if (arg == "-test") {
+      bool rc = CXYValsInside::unitTest();
+
+      exit(rc);
+    }
+  }
+
+  //---
+
   CQXYValsTest test;
 
   test.resize(800, 800);

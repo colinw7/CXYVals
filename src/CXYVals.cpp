@@ -2,6 +2,7 @@
          5->4 points to allow quick bbox test for IsInside */
 
 #include <CXYVals.h>
+#include <map>
 #include <set>
 
 namespace {
@@ -300,6 +301,8 @@ CXYValsInside(const Polygons &polygons, bool init) :
 {
   if (init)
     initValues(polygons);
+  else
+    initMem();
 }
 
 CXYValsInside::
@@ -308,6 +311,8 @@ CXYValsInside(const Polygon &polygon, bool init) :
 {
   if (init)
     initValues(polygon);
+  else
+    initMem();
 }
 
 CXYValsInside::
@@ -316,6 +321,8 @@ CXYValsInside(const Polygon &polygon1, const Polygon &polygon2, bool init) :
 {
   if (init)
     initValues(polygon1, polygon2);
+  else
+    initMem();
 }
 
 CXYValsInside::
@@ -324,6 +331,8 @@ CXYValsInside(const std::vector<double> &x, std::vector<double> &y, bool init) :
 {
   if (init)
     initValues(x, y);
+  else
+    initMem();
 }
 
 CXYValsInside::
@@ -333,6 +342,8 @@ CXYValsInside(const std::vector<double> &x1, std::vector<double> &y1,
 {
   if (init)
     initValues(x1, y1, x2, y2);
+  else
+    initMem();
 }
 
 CXYValsInside::
@@ -341,6 +352,8 @@ CXYValsInside(const double *x, const double *y, int num_xy, bool init) :
 {
   if (init)
     initValues(x, y, num_xy);
+  else
+    initMem();
 }
 
 CXYValsInside::
@@ -350,6 +363,8 @@ CXYValsInside(const double *x1, const double *y1, int num_xy1,
 {
   if (init)
     initValues(x1, y1, num_xy1, x2, y2, num_xy2);
+  else
+    initMem();
 }
 
 void
@@ -650,9 +665,38 @@ getPolygons(Polygons &polygons, bool check_consistent) const
 
   //---
 
+  th->combineInside(INSIDE1);
+
   Polygon polygon;
 
-  while (getPolygon(polygon, check_consistent)) {
+  while (getPolygon(INSIDE1, polygon, check_consistent)) {
+    polygons.push_back(polygon);
+
+    th->removePolygon(polygon);
+  }
+
+  //---
+
+  // restore inside
+  th->inside_ = inside;
+
+  return ! polygons.empty();
+}
+
+bool
+CXYValsInside::
+getPolygons(InsideValue val, Polygons &polygons, bool check_consistent) const
+{
+  // save inside
+  InsideArray inside = inside_;
+
+  CXYValsInside *th = const_cast<CXYValsInside *>(this);
+
+  //---
+
+  Polygon polygon;
+
+  while (getPolygon(val, polygon, check_consistent)) {
     polygons.push_back(polygon);
 
     th->removePolygon(polygon);
@@ -722,9 +766,6 @@ CXYValsInside::
 getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &y,
            bool check_consistent) const
 {
-  typedef std::pair<int,int> Coord;
-  typedef std::vector<Coord> Coords;
-
   class PolyCoords {
    public:
     PolyCoords(const CXYValsInside *inside) :
@@ -735,13 +776,34 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
       y_.reserve(max_xy_);
     }
 
-    void addPoint(int i, int j) {
+    bool addPoint(int i, int j) {
+      Coord c(i, j);
+
+      Coords::const_iterator p = coords_.find(c);
+
+      if (p != coords_.end()) {
+        int ii = (*p).second;
+
+        //std::cerr << "Loop from " << ii << " to " << num_xy_ << std::endl;
+
+        for (int i = ii; i < num_xy_; ++i) {
+          x_[i - ii] = x_[i];
+          y_[i - ii] = y_[i];
+        }
+
+        num_xy_ -= ii;
+
+        return false;
+      }
+
       x_[num_xy_] = inside_->xval(i);
       y_[num_xy_] = inside_->yval(j);
 
+      coords_[c] = num_xy_;
+
       ++num_xy_;
 
-      coords_.push_back(Coord(i, j));
+      return true;
     }
 
     int numXY() const { return num_xy_; }
@@ -758,6 +820,9 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
     }
 
    private:
+    typedef std::pair<int,int>  Coord;
+    typedef std::map<Coord,int> Coords;
+
     const CXYValsInside *inside_;
     std::vector<double>  x_, y_;
     int                  max_xy_;
@@ -802,7 +867,7 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
   int ix2 = ix1;
   int iy2 = iy1;
 
-  polyCoords.addPoint(ix2, iy2);
+  (void) polyCoords.addPoint(ix2, iy2);
 
   while (! polyCoords.isFull()) {
     int save_num_xy = polyCoords.numXY();
@@ -828,7 +893,8 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
         if (ix1 == ix2 && iy1 == iy2)
           break;
 
-        polyCoords.addPoint(ix2, iy2);
+        if (! polyCoords.addPoint(ix2, iy2))
+          break;
 
         if (polyCoords.isFull())
           break;
@@ -853,7 +919,8 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
         if (ix1 == ix2 && iy1 == iy2)
           break;
 
-        polyCoords.addPoint(ix2, iy2);
+        if (! polyCoords.addPoint(ix2, iy2))
+          break;
 
         if (polyCoords.isFull())
           break;
@@ -881,7 +948,8 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
         if (ix1 == ix2 && iy1 == iy2)
           break;
 
-        polyCoords.addPoint(ix2, iy2);
+        if (! polyCoords.addPoint(ix2, iy2))
+          break;
 
         if (polyCoords.isFull())
           break;
@@ -906,7 +974,8 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
         if (ix1 == ix2 && iy1 == iy2)
           break;
 
-        polyCoords.addPoint(ix2, iy2);
+        if (! polyCoords.addPoint(ix2, iy2))
+          break;
 
         if (polyCoords.isFull())
           break;
@@ -972,7 +1041,8 @@ fill(bool disconnected)
   if (! getPolygons(polygons) || polygons.size() < 2)
     return;
 
-print(std::cerr); std::cerr << std::endl;
+  //print(std::cerr); std::cerr << std::endl;
+
   // set unique number for each polygon
   for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
     double ym = avg(yvals_[iy], yvals_[iy + 1]);
@@ -992,19 +1062,22 @@ print(std::cerr); std::cerr << std::endl;
       }
     }
   }
-print(std::cerr); std::cerr << std::endl;
+  //print(std::cerr); std::cerr << std::endl;
 
   // connected different regions horizontally and vertically
   int numFilled = 0;
 
   while (fillH() || fillV()) {
-print(std::cerr); std::cerr << std::endl;
+    //print(std::cerr); std::cerr << std::endl;
     ++numFilled;
   }
 
   // reset inside to single value
-  combineInside(1);
-print(std::cerr); std::cerr << std::endl;
+  combineInside(INSIDE1);
+  //print(std::cerr); std::cerr << std::endl;
+
+  // fill holes
+  fillHoles();
 
   // if still disconnected then force connection on empty rows and refill
   if (numFilled == 0 && disconnected) {
@@ -1116,6 +1189,30 @@ fillV()
   return found;
 }
 
+bool
+CXYValsInside::
+fillHoles()
+{
+  if (num_xvals_ <= 0 || num_yvals_ <= 0)
+    return false;
+
+  int nf = 0;
+
+  for (int iy = 1; iy < num_yvals_ - 2; ++iy) {
+    for (int ix = 1; ix < num_xvals_ - 2; ++ix) {
+      if (! inside_[ix][iy] &&
+          inside_[ix - 1][iy] && inside_[ix + 1][iy] &&
+          inside_[ix][iy - 1] && inside_[ix][iy + 1]) {
+        inside_[ix][iy] = 1;
+
+        ++nf;
+      }
+    }
+  }
+
+  return (nf > 0);
+}
+
 void
 CXYValsInside::
 fillDisconnected()
@@ -1199,12 +1296,19 @@ isInside(double xm, double ym) const
 //---------
 
 bool
-CXYValsSelfTest(const char *)
+CXYValsInside::
+unitTest(const std::string &)
 {
   static double x[5] = { -0.1, 24.7, 50.3, 75.2, 100.5 };
   static double y[5] = {  0.1, 45.8, 45.8, 77.3,  99.9 };
 
   CXYValsInside xyvals(x, y, 5);
+
+  std::cerr << "Init" << std::endl;
+  xyvals.print(std::cerr);
+  std::cerr << std::endl;
+
+  //---
 
   CXYValsInside::InsideArray &inside = xyvals.getInside();
 
@@ -1220,14 +1324,31 @@ CXYValsSelfTest(const char *)
     }
   }
 
-  double *xo, *yo;
-  int     num_xyo;
+  std::cerr << "Set Values" << std::endl;
+  xyvals.print(std::cerr);
+  std::cerr << std::endl;
 
-  bool rc = xyvals.getPolygon(CXYValsInside::INSIDE1, &xo, &yo, &num_xyo, false);
+  //---
 
-  assert(rc /* "getPolygon" */);
+  CXYValsInside::Polygons polygons;
 
-  assert(num_xyo == 20 /* "num_xyo" */);
+  bool rc = xyvals.getPolygons(polygons, false);
+  assert(rc);
+
+  assert(polygons.size() == 6);
+
+  std::cerr << polygons.size() << " Polygons" << std::endl;
+  for (uint i = 0; i < polygons.size(); ++i) {
+    std::cerr << "Polygon: " << i << std::endl;
+
+    const CXYValsInside::Polygon &polygon = polygons[i];
+
+    for (int j = 0; j < polygon.size(); ++j)
+      std::cerr << " {" << polygon.x[j] << "," << polygon.y[j] << "}" << std::endl;
+  }
+  std::cerr << std::endl;
+
+  //---
 
   return true;
 }
