@@ -1,7 +1,7 @@
 #include <QWidget>
+#include <CXYVals.h>
 
 class CQXYValsTest;
-class CXYValsInside;
 
 class CQXYValsCanvas : public QWidget {
   Q_OBJECT
@@ -19,16 +19,27 @@ class CQXYValsCanvas : public QWidget {
   void keyPressEvent(QKeyEvent *);
 
   void updatePolygons();
+  void getPolygons();
+
+  QPolygon toQPolygon(const CXYVals::Polygon &polygon) const;
 
  private:
   typedef std::vector<QPolygon> Polygons;
 
-  CQXYValsTest  *test_;
-  CXYValsInside *xyvals_;
-  bool           pressed_ { false };
-  QPoint         pressPos_;
-  QPoint         releasePos_;
-  Polygons       polygons_;
+  struct ValueData {
+    CXYValsInside           xyvals;
+    CXYValsInside::Polygons ipolygons;
+    CXYValsInside::Polygons opolygons;
+    Polygons                iqpolygons;
+    Polygons                oqpolygons;
+  };
+
+  CQXYValsTest* test_;
+  ValueData     valueData_;
+  ValueData     valueData1_;
+  bool          pressed_ { false };
+  QPoint        pressPos_;
+  QPoint        releasePos_;
 };
 
 class CQXYValsTest : public QWidget {

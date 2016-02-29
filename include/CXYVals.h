@@ -12,6 +12,11 @@
  */
 class CXYVals {
  public:
+  enum FillMode {
+    FILL_OUT,
+    FILL_ALL
+  };
+
   struct Polygon {
     Polygon() { }
 
@@ -20,15 +25,43 @@ class CXYVals {
       assert(x.size() == y.size());
     }
 
+    Polygon(const double *x1, const double *y1, int n1) {
+      x.resize(n1);
+      y.resize(n1);
+
+      memcpy(&x[0], x1, n1*sizeof(double));
+      memcpy(&y[0], y1, n1*sizeof(double));
+    }
+
     int size() const { return x.size(); }
 
     bool isInside(double xm, double ym) const;
+
+    void centroid(double &xc, double &yc) const {
+      xc = 0; yc = 0;
+
+      for (int i = 0; i < size(); ++i) {
+        xc += x[i];
+        yc += y[i];
+      }
+
+      xc /= size();
+      yc /= size();
+    }
+
+    void print(std::ostream &os) const {
+      for (int i = 0; i < size(); ++i)
+        os << " (" << x[i] << "," << y[i] << ")";
+      os << std::endl;
+    }
 
     std::vector<double> x;
     std::vector<double> y;
   };
 
   typedef std::vector<Polygon> Polygons;
+
+  typedef std::pair<int,int> Coord;
 
  public:
   CXYVals(const Polygons &polygons);
@@ -49,14 +82,21 @@ class CXYVals {
   const std::vector<double> &xvals() const { return xvals_; }
   const std::vector<double> &yvals() const { return yvals_; }
 
-  double xval(int i) const { return xvals_[i]; }
-  double yval(int i) const { return yvals_[i]; }
+  double xval(int ix) const { return xvals_[ix]; }
+  double yval(int iy) const { return yvals_[iy]; }
+
+  double xsize(int ix) const { return xvals_[ix + 1] - xvals_[ix]; }
+  double ysize(int iy) const { return yvals_[iy + 1] - yvals_[iy]; }
+
+  double area(int ix, int iy) const { return xsize(ix)*ysize(iy); }
 
   const double *getXVals   () const { return &xvals_[0]; }
   int           getNumXVals() const { return xvals_.size(); }
 
   const double *getYVals   () const { return &yvals_[0]; }
   int           getNumYVals() const { return yvals_.size(); }
+
+  void init(const Polygons &polygons);
 
   void init(const Polygon &polygon);
   void init(const Polygon &polygon1, const Polygon &polygon2);
@@ -69,11 +109,11 @@ class CXYVals {
   void init(const double *x1, const double *y1, int num_xy1,
             const double *x2, const double *y2, int num_xy2);
 
-  void init(const Polygons &polygons);
-
   void clear();
 
- private:
+ protected:
+  void init1(const Polygons &polygons);
+
   void insertValue(double v, double *vals, int &num_vals);
 
  protected:
@@ -117,6 +157,9 @@ class CXYValsInside : public CXYVals {
 
  ~CXYValsInside() { }
 
+  bool isOrValues() const { return orValues_; }
+  void setOrValues(bool b) { orValues_ = b; }
+
   void initValues(const Polygons &polygons);
 
   void initValues(const Polygon &polygon);
@@ -142,10 +185,14 @@ class CXYValsInside : public CXYVals {
   int numXVals() const { return num_xvals_; }
   int numYVals() const { return num_yvals_; }
 
-  bool isInside1(int i, int j) const { return (inside_[i][j] & CXYValsInside::INSIDE1); }
-  bool isInside2(int i, int j) const { return (inside_[i][j] & CXYValsInside::INSIDE2); }
+  bool isInside1(int ix, int iy) const { return (inside_[ix][iy] & CXYValsInside::INSIDE1); }
+  bool isInside2(int ix, int iy) const { return (inside_[ix][iy] & CXYValsInside::INSIDE2); }
 
-  bool isInside(int i, int j, InsideValue val=INSIDE1) const { return (inside_[i][j] == val); }
+  bool isInside(int ix, int iy, InsideValue val=INSIDE1) const {
+    return (inside_[ix][iy] == val);
+  }
+
+  InsideValue insideVal(int ix, int iy) const { return inside_[ix][iy]; }
 
   void setInside(InsideValue val=INSIDE1);
 
@@ -154,44 +201,67 @@ class CXYValsInside : public CXYVals {
   void clear();
 
   bool getPolygons(Polygons &polygons, bool check_consistent=false) const;
-  bool getPolygons(InsideValue inside_val, Polygons &polygons, bool check_consistent=false) const;
+  bool getPolygons(InsideValue ival, Polygons &polygons, bool check_consistent=false) const;
 
   bool getPolygon(Polygon &polygon, bool check_consistent=false) const;
-  bool getPolygon(InsideValue inside_val, Polygon &polygon, bool check_consistent=false) const;
+  bool getPolygon(InsideValue ival, Polygon &polygon, bool check_consistent=false) const;
 
   bool getPolygon(std::vector<double> &x, std::vector<double> &y,
                   bool check_consistent=false) const;
-  bool getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &y,
+  bool getPolygon(InsideValue ival, std::vector<double> &x, std::vector<double> &y,
                   bool check_consistent=false) const;
 
   bool getPolygon(double **xo, double **yo, int *num_xyo, bool check_consistent=false) const;
-  bool getPolygon(InsideValue inside_val, double **xo, double **yo, int *num_xyo,
+  bool getPolygon(InsideValue ival, double **xo, double **yo, int *num_xyo,
                   bool check_consistent=false) const;
 
-  void removePolygon(const Polygon &poly);
+  void setPolygonValue(const Polygon &poly, InsideValue val);
 
-  void fill(bool disconnected=false);
+  double polygonArea(const Polygon &polygon) const;
+
+  double valueArea(InsideValue ival) const;
+
+  InsideValue polygonValue(const Polygon &polygon) const;
+
+  int getNumPolygons() const;
+
+  int  setPolygonInsideValues();
+  void setPolygonInsideValues(const Polygons &polygons);
+
+  bool fill(bool step=false);
+
+  InsideValue findSmallest() const;
+
+  bool fillDisconnectedRows();
+  bool fillDisconnectedColumns();
 
   void print(std::ostream &os) const;
 
   static bool unitTest(const std::string &args="");
 
  private:
+  void initValues1(const CXYValsInside &xyvals, const Polygon &polygon);
+  void initValues1(const Polygons &polygons);
+
   void initMem();
 
-  bool fillH();
-  bool fillV();
+  bool fill1(bool step, FillMode mode);
 
-  bool fillHoles();
+  bool fillHorizontal(InsideValue val, FillMode mode);
+  bool fillVertical  (InsideValue val, FillMode mode);
 
-  void fillDisconnected();
+  bool isOnEdge(const Polygon &poly) const;
 
-  bool isEmptyRow(int iy) const;
+  void polygonBounds(InsideValue val, int &x1, int &y1, int &x2, int &y2) const;
+
+  bool isEmptyRow   (int iy) const;
+  bool isEmptyColumn(int ix) const;
 
  private:
   InsideArray inside_;
   int         num_xvals_ { 0 };
   int         num_yvals_ { 0 };
+  bool        orValues_ { false };
 };
 
 #endif

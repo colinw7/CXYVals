@@ -111,9 +111,20 @@ CXYVals(const double *x1, const double *y1, int num_xy1,
 
 void
 CXYVals::
+init(const Polygons &polygons)
+{
+  init1(polygons);
+}
+
+void
+CXYVals::
 init(const Polygon &polygon)
 {
-  init(&polygon.x[0], &polygon.y[0], polygon.x.size());
+  Polygons polygons;
+
+  polygons.push_back(polygon);
+
+  init1(polygons);
 }
 
 void
@@ -122,17 +133,19 @@ init(const Polygon &polygon1, const Polygon &polygon2)
 {
   assert(polygon1.size() == polygon2.size());
 
-  init(&polygon1.x[0], &polygon1.y[0], polygon1.size(),
-       &polygon2.x[0], &polygon2.y[0], polygon2.size());
+  Polygons polygons;
+
+  polygons.push_back(polygon1);
+  polygons.push_back(polygon2);
+
+  init1(polygons);
 }
 
 void
 CXYVals::
 init(const std::vector<double> &x, std::vector<double> &y)
 {
-  assert(x.size() == y.size());
-
-  init(&x[0], &y[0], x.size());
+  init(Polygon(x, y));
 }
 
 void
@@ -140,45 +153,27 @@ CXYVals::
 init(const std::vector<double> &x1, std::vector<double> &y1,
      const std::vector<double> &x2, std::vector<double> &y2)
 {
-  assert(x1.size() == y1.size());
-  assert(x2.size() == y2.size());
-
-  init(&x1[0], &y1[0], x1.size(), &x2[0], &y2[0], x2.size());
+  init(Polygon(x1, y1), Polygon(x2, y2));
 }
 
 void
 CXYVals::
 init(const double *x, const double *y, int num_xy)
 {
-  // Allocate return value for maximum possible size
-  std::vector<double> xvals, yvals;
-
-  xvals.reserve(num_xy);
-  yvals.reserve(num_xy);
-
-  //---
-
-  int num_xvals = 0;
-  int num_yvals = 0;
-
-  for (int i = 0; i < num_xy; ++i) {
-    insertValue(x[i], &xvals[0], num_xvals);
-    insertValue(y[i], &yvals[0], num_yvals);
-  }
-
-  if (num_xy) {
-    xvals_ = std::vector<double>(&xvals[0], &xvals[num_xvals]);
-    yvals_ = std::vector<double>(&yvals[0], &yvals[num_yvals]);
-  }
-  else {
-    xvals_.clear();
-    yvals_.clear();
-  }
+  init(Polygon(x, y, num_xy));
 }
 
 void
 CXYVals::
-init(const Polygons &polygons)
+init(const double *x1, const double *y1, int num_xy1,
+     const double *x2, const double *y2, int num_xy2)
+{
+  init(Polygon(x1, y1, num_xy1), Polygon(x2, y2, num_xy2));
+}
+
+void
+CXYVals::
+init1(const Polygons &polygons)
 {
   int num_xy = 0;
 
@@ -203,32 +198,30 @@ init(const Polygons &polygons)
     num_xy += n;
   }
 
-  init(&x[0], &y[0], num_xy);
-}
+  //---
 
-void
-CXYVals::
-init(const double *x1, const double *y1, int num_xy1,
-     const double *x2, const double *y2, int num_xy2)
-{
-  int num_xy = num_xy1 + num_xy2;
+  // Allocate return value for maximum possible size
+  std::vector<double> xvals, yvals;
 
-  std::vector<double> x, y;
+  xvals.reserve(num_xy);
+  yvals.reserve(num_xy);
 
-  x.resize(num_xy);
-  y.resize(num_xy);
+  int num_xvals = 0;
+  int num_yvals = 0;
 
-  if (num_xy1) {
-    memcpy(&x[0      ], x1, num_xy1*sizeof(double));
-    memcpy(&y[0      ], y1, num_xy1*sizeof(double));
+  for (int i = 0; i < num_xy; ++i) {
+    insertValue(x[i], &xvals[0], num_xvals);
+    insertValue(y[i], &yvals[0], num_yvals);
   }
 
-  if (num_xy2) {
-    memcpy(&x[num_xy1], x2, num_xy2*sizeof(double));
-    memcpy(&y[num_xy1], y2, num_xy2*sizeof(double));
+  if (num_xy) {
+    xvals_ = std::vector<double>(&xvals[0], &xvals[num_xvals]);
+    yvals_ = std::vector<double>(&yvals[0], &yvals[num_yvals]);
   }
-
-  init(&x[0], &y[0], num_xy);
+  else {
+    xvals_.clear();
+    yvals_.clear();
+  }
 }
 
 void
@@ -297,7 +290,7 @@ clear()
 
 CXYValsInside::
 CXYValsInside(const Polygons &polygons, bool init) :
- CXYVals(polygons), num_xvals_(0), num_yvals_(0)
+ CXYVals(polygons), num_xvals_(0), num_yvals_(0), orValues_(false)
 {
   if (init)
     initValues(polygons);
@@ -307,7 +300,7 @@ CXYValsInside(const Polygons &polygons, bool init) :
 
 CXYValsInside::
 CXYValsInside(const Polygon &polygon, bool init) :
- CXYVals(polygon), num_xvals_(0), num_yvals_(0)
+ CXYVals(polygon), num_xvals_(0), num_yvals_(0), orValues_(false)
 {
   if (init)
     initValues(polygon);
@@ -317,7 +310,7 @@ CXYValsInside(const Polygon &polygon, bool init) :
 
 CXYValsInside::
 CXYValsInside(const Polygon &polygon1, const Polygon &polygon2, bool init) :
- CXYVals(polygon1, polygon2), num_xvals_(0), num_yvals_(0)
+ CXYVals(polygon1, polygon2), num_xvals_(0), num_yvals_(0), orValues_(false)
 {
   if (init)
     initValues(polygon1, polygon2);
@@ -327,7 +320,7 @@ CXYValsInside(const Polygon &polygon1, const Polygon &polygon2, bool init) :
 
 CXYValsInside::
 CXYValsInside(const std::vector<double> &x, std::vector<double> &y, bool init) :
- CXYVals(x, y), num_xvals_(0), num_yvals_(0)
+ CXYVals(x, y), num_xvals_(0), num_yvals_(0), orValues_(false)
 {
   if (init)
     initValues(x, y);
@@ -338,7 +331,7 @@ CXYValsInside(const std::vector<double> &x, std::vector<double> &y, bool init) :
 CXYValsInside::
 CXYValsInside(const std::vector<double> &x1, std::vector<double> &y1,
               const std::vector<double> &x2, std::vector<double> &y2, bool init) :
- CXYVals(x1, y1, x2, y2), num_xvals_(0), num_yvals_(0)
+ CXYVals(x1, y1, x2, y2), num_xvals_(0), num_yvals_(0), orValues_(false)
 {
   if (init)
     initValues(x1, y1, x2, y2);
@@ -348,7 +341,7 @@ CXYValsInside(const std::vector<double> &x1, std::vector<double> &y1,
 
 CXYValsInside::
 CXYValsInside(const double *x, const double *y, int num_xy, bool init) :
- CXYVals(x, y, num_xy), num_xvals_(0), num_yvals_(0)
+ CXYVals(x, y, num_xy), num_xvals_(0), num_yvals_(0), orValues_(false)
 {
   if (init)
     initValues(x, y, num_xy);
@@ -359,7 +352,7 @@ CXYValsInside(const double *x, const double *y, int num_xy, bool init) :
 CXYValsInside::
 CXYValsInside(const double *x1, const double *y1, int num_xy1,
               const double *x2, const double *y2, int num_xy2, bool init) :
- CXYVals(x1, y1, num_xy1, x2, y2, num_xy2), num_xvals_(0), num_yvals_(0)
+ CXYVals(x1, y1, num_xy1, x2, y2, num_xy2), num_xvals_(0), num_yvals_(0), orValues_(false)
 {
   if (init)
     initValues(x1, y1, num_xy1, x2, y2, num_xy2);
@@ -371,54 +364,18 @@ void
 CXYValsInside::
 initValues(const Polygons &polygons)
 {
-  CXYVals::init(polygons);
-
-  initMem();
-
-  if (num_xvals_ <= 0 || num_yvals_ <= 0)
-    return;
-
-  if (polygons.size() < 8*sizeof(InsideValue)) {
-    for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
-      double ym = avg(yvals_[iy], yvals_[iy + 1]);
-
-      for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
-        double xm = avg(xvals_[ix], xvals_[ix + 1]);
-
-        for (uint k = 0; k < polygons.size(); ++k) {
-          const Polygon &polygon = polygons[k];
-
-          InsideValue ival = (1U << k);
-
-          if (polygon.isInside(xm, ym))
-            inside_[ix][iy] |= ival;
-        }
-      }
-    }
-  }
-  else {
-    for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
-      double ym = avg(yvals_[iy], yvals_[iy + 1]);
-
-      for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
-        double xm = avg(xvals_[ix], xvals_[ix + 1]);
-
-        for (uint k = 0; k < polygons.size(); ++k) {
-          const Polygon &polygon = polygons[k];
-
-          if (polygon.isInside(xm, ym))
-            inside_[ix][iy] = INSIDE1;
-        }
-      }
-    }
-  }
+  initValues1(polygons);
 }
 
 void
 CXYValsInside::
 initValues(const Polygon &polygon)
 {
-  initValues(&polygon.x[0], &polygon.y[0], polygon.size());
+  Polygons polygons;
+
+  polygons.push_back(polygon);
+
+  initValues1(polygons);
 }
 
 void
@@ -427,17 +384,40 @@ initValues(const Polygon &polygon1, const Polygon &polygon2)
 {
   assert(polygon1.size() == polygon2.size());
 
-  initValues(&polygon1.x[0], &polygon1.y[0], polygon1.size(),
-             &polygon2.x[0], &polygon2.y[0], polygon2.size());
+  Polygons polygons;
+
+  polygons.push_back(polygon1);
+  polygons.push_back(polygon2);
+
+  initValues1(polygons);
+}
+
+void
+CXYValsInside::
+initValues(const CXYValsInside &xyvals, const Polygon &polygon)
+{
+  initValues1(xyvals, polygon);
+}
+
+void
+CXYValsInside::
+initValues(const CXYValsInside &xyvals, const double *x, const double *y, int num_xy)
+{
+  initValues1(xyvals, Polygon(x, y, num_xy));
+}
+
+void
+CXYValsInside::
+initValues(const CXYValsInside &xyvals, const std::vector<double> &x, std::vector<double> &y)
+{
+  initValues1(xyvals, Polygon(x, y));
 }
 
 void
 CXYValsInside::
 initValues(const std::vector<double> &x, std::vector<double> &y)
 {
-  assert(x.size() == y.size());
-
-  initValues(&x[0], &y[0], x.size());
+  initValues(Polygon(x, y));
 }
 
 void
@@ -445,65 +425,14 @@ CXYValsInside::
 initValues(const std::vector<double> &x1, std::vector<double> &y1,
            const std::vector<double> &x2, std::vector<double> &y2)
 {
-  assert(x1.size() == y1.size());
-  assert(x2.size() == y2.size());
-
-  initValues(&x1[0], &y1[0], x1.size(), &x2[0], &y2[0], x2.size());
-}
-
-void
-CXYValsInside::
-initValues(const CXYValsInside &xyvals, const Polygon &polygon)
-{
-  initValues(xyvals, &polygon.x[0], &polygon.y[0], polygon.size());
-}
-
-void
-CXYValsInside::
-initValues(const CXYValsInside &xyvals, const double *x, const double *y, int num_xy)
-{
-  std::vector<double> x1(&x[0], &x[num_xy - 1]);
-  std::vector<double> y1(&y[0], &y[num_xy - 1]);
-
-  initValues(xyvals, x1, y1);
-}
-
-void
-CXYValsInside::
-initValues(const CXYValsInside &xyvals, const std::vector<double> &x, std::vector<double> &y)
-{
-  Polygons polygons;
-
-  if (xyvals.getPolygons(polygons)) {
-    polygons.push_back(Polygon(x, y));
-
-    initValues(polygons);
-  }
-  else
-    initValues(x, y);
+  initValues(Polygon(x1, y1), Polygon(x2, y2));
 }
 
 void
 CXYValsInside::
 initValues(const double *x, const double *y, int num_xy)
 {
-  CXYVals::init(x, y, num_xy);
-
-  initMem();
-
-  if (num_xvals_ <= 0 || num_yvals_ <= 0)
-    return;
-
-  for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
-    double ym = avg(yvals_[iy], yvals_[iy + 1]);
-
-    for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
-      double xm = avg(xvals_[ix], xvals_[ix + 1]);
-
-      if (PointInsideEvenOdd(xm, ym, x, y, num_xy))
-        inside_[ix][iy] |= INSIDE1;
-    }
-  }
+  initValues(Polygon(x, y, num_xy));
 }
 
 void
@@ -511,26 +440,34 @@ CXYValsInside::
 initValues(const double *x1, const double *y1, int num_xy1,
            const double *x2, const double *y2, int num_xy2)
 {
-  CXYVals::init(x1, y1, num_xy1, x2, y2, num_xy2);
+  initValues(Polygon(x1, y1, num_xy1), Polygon(x2, y2, num_xy2));
+}
+
+void
+CXYValsInside::
+initValues1(const CXYValsInside &xyvals, const Polygon &polygon)
+{
+  Polygons polygons;
+
+  (void) xyvals.getPolygons(polygons);
+
+  polygons.push_back(polygon);
+
+  initValues1(polygons);
+}
+
+void
+CXYValsInside::
+initValues1(const Polygons &polygons)
+{
+  CXYVals::init1(polygons);
 
   initMem();
 
   if (num_xvals_ <= 0 || num_yvals_ <= 0)
     return;
 
-  for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
-    double ym = avg(yvals_[iy], yvals_[iy + 1]);
-
-    for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
-      double xm = avg(xvals_[ix], xvals_[ix + 1]);
-
-      if (PointInsideEvenOdd(xm, ym, x1, y1, num_xy1))
-        inside_[ix][iy] |= INSIDE1;
-
-      if (PointInsideEvenOdd(xm, ym, x2, y2, num_xy2))
-        inside_[ix][iy] |= INSIDE2;
-    }
-  }
+  setPolygonInsideValues(polygons);
 }
 
 void
@@ -544,8 +481,12 @@ initMem()
   if (num_xvals_ > 0 && num_yvals_ > 0) {
     inside_.resize(num_xvals_ - 1);
 
-    for (int ix = 0; ix < num_xvals_ - 1; ++ix)
+    for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
       inside_[ix].resize(num_yvals_ - 1);
+
+      for (int iy = 0; iy < num_yvals_ - 1; ++iy)
+        inside_[ix][iy] = 0;
+    }
   }
   else
     inside_.clear();
@@ -615,9 +556,7 @@ void
 CXYValsInside::
 setInside(InsideValue val)
 {
-  if (num_xvals_ <= 0 || num_yvals_ <= 0)
-    return;
-
+  // set all inside values to specified value
   for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
     for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
       inside_[ix][iy] = val;
@@ -629,15 +568,11 @@ void
 CXYValsInside::
 combineInside(InsideValue val)
 {
-  if (num_xvals_ <= 0 || num_yvals_ <= 0)
-    return;
-
+  // set all inside values to specified value if non-zero
   for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
     for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
       if (inside_[ix][iy])
         inside_[ix][iy] = val;
-      else
-        inside_[ix][iy] = 0;
     }
   }
 }
@@ -665,14 +600,17 @@ getPolygons(Polygons &polygons, bool check_consistent) const
 
   //---
 
+  // set all non-zero inside values to INSIDE1
   th->combineInside(INSIDE1);
 
+  // extract each polygon using INSIDE1 value
   Polygon polygon;
 
   while (getPolygon(INSIDE1, polygon, check_consistent)) {
     polygons.push_back(polygon);
 
-    th->removePolygon(polygon);
+    // remove polygon
+    th->setPolygonValue(polygon, 0);
   }
 
   //---
@@ -694,12 +632,14 @@ getPolygons(InsideValue val, Polygons &polygons, bool check_consistent) const
 
   //---
 
+  // extract each polygon using specified value
   Polygon polygon;
 
   while (getPolygon(val, polygon, check_consistent)) {
     polygons.push_back(polygon);
 
-    th->removePolygon(polygon);
+    // remove polygon
+    th->setPolygonValue(polygon, val ? 0 : 1);
   }
 
   //---
@@ -820,7 +760,6 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
     }
 
    private:
-    typedef std::pair<int,int>  Coord;
     typedef std::map<Coord,int> Coords;
 
     const CXYValsInside *inside_;
@@ -1017,8 +956,9 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
 
 void
 CXYValsInside::
-removePolygon(const Polygon &polygon)
+setPolygonValue(const Polygon &polygon, InsideValue val)
 {
+  // grid cells inside polygon to value
   for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
     double ym = avg(yvals_[iy], yvals_[iy + 1]);
 
@@ -1026,71 +966,267 @@ removePolygon(const Polygon &polygon)
       double xm = avg(xvals_[ix], xvals_[ix + 1]);
 
       if (polygon.isInside(xm, ym))
-        inside_[ix][iy] = 0;
+        inside_[ix][iy] = val;
     }
   }
 }
 
-void
+double
 CXYValsInside::
-fill(bool disconnected)
+polygonArea(const Polygon &polygon) const
 {
-  // if less than 2 polygons we are done
-  Polygons polygons;
+  // get area of specified polygon
+  double area = 0;
 
-  if (! getPolygons(polygons) || polygons.size() < 2)
-    return;
-
-  //print(std::cerr); std::cerr << std::endl;
-
-  // set unique number for each polygon
   for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
     double ym = avg(yvals_[iy], yvals_[iy + 1]);
 
     for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
       double xm = avg(xvals_[ix], xvals_[ix + 1]);
 
-      inside_[ix][iy] = 0;
+      if (polygon.isInside(xm, ym))
+        area += CXYVals::area(ix, iy);
+    }
+  }
 
-      for (uint k = 0; k < polygons.size(); ++k) {
-        const Polygon &polygon = polygons[k];
+  return area;
+}
 
-        if (polygon.isInside(xm, ym)) {
-          inside_[ix][iy] = k + 1;
-          break;
+double
+CXYValsInside::
+valueArea(InsideValue val) const
+{
+  // get area of cells of specified value
+  double area = 0;
+
+  for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
+    for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
+      if (inside_[ix][iy] == val)
+        area += CXYVals::area(ix, iy);
+    }
+  }
+
+  return area;
+}
+
+CXYValsInside::InsideValue
+CXYValsInside::
+polygonValue(const Polygon &polygon) const
+{
+  // get value of cells of specified value
+  for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
+    double ym = avg(yvals_[iy], yvals_[iy + 1]);
+
+    for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
+      double xm = avg(xvals_[ix], xvals_[ix + 1]);
+
+      if (polygon.isInside(xm, ym))
+        return inside_[ix][iy];
+    }
+  }
+
+  return 0;
+}
+
+int
+CXYValsInside::
+getNumPolygons() const
+{
+  // get number of disconnected polygons
+  Polygons polygons;
+
+  if (! getPolygons(polygons))
+    return 0;
+
+  return polygons.size();
+}
+
+int
+CXYValsInside::
+setPolygonInsideValues()
+{
+  // set unique values for all disconnected polygons
+  Polygons polygons;
+
+  if (! getPolygons(polygons))
+    return 0;
+
+  setPolygonInsideValues(polygons);
+
+  return polygons.size();
+}
+
+void
+CXYValsInside::
+setPolygonInsideValues(const Polygons &polygons)
+{
+  // set unique number for each polygon
+  if (isOrValues() && polygons.size() < 8*sizeof(InsideValue)) {
+    for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
+      double ym = avg(yvals_[iy], yvals_[iy + 1]);
+
+      for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
+        double xm = avg(xvals_[ix], xvals_[ix + 1]);
+
+        inside_[ix][iy] = 0;
+
+        for (uint k = 0; k < polygons.size(); ++k) {
+          const Polygon &polygon = polygons[k];
+
+          InsideValue ival = (1U << k);
+
+          if (polygon.isInside(xm, ym))
+            inside_[ix][iy] |= ival;
         }
       }
     }
   }
-  //print(std::cerr); std::cerr << std::endl;
+  else {
+    for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
+      double ym = avg(yvals_[iy], yvals_[iy + 1]);
 
-  // connected different regions horizontally and vertically
-  int numFilled = 0;
+      for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
+        double xm = avg(xvals_[ix], xvals_[ix + 1]);
 
-  while (fillH() || fillV()) {
-    //print(std::cerr); std::cerr << std::endl;
-    ++numFilled;
-  }
+        inside_[ix][iy] = 0;
 
-  // reset inside to single value
-  combineInside(INSIDE1);
-  //print(std::cerr); std::cerr << std::endl;
+        for (uint k = 0; k < polygons.size(); ++k) {
+          const Polygon &polygon = polygons[k];
 
-  // fill holes
-  fillHoles();
-
-  // if still disconnected then force connection on empty rows and refill
-  if (numFilled == 0 && disconnected) {
-    fillDisconnected();
-
-    return fill(disconnected);
+          if (polygon.isInside(xm, ym)) {
+            inside_[ix][iy] = k + 1;
+            break;
+          }
+        }
+      }
+    }
   }
 }
 
 bool
 CXYValsInside::
-fillH()
+fill(bool step)
 {
+  if (fill1(step, FILL_OUT))
+    return true;
+
+  if (fill1(step, FILL_ALL))
+    return true;
+
+  return false;
+}
+
+bool
+CXYValsInside::
+fill1(bool step, FillMode mode)
+{
+  bool rc = true;
+
+  while (getNumPolygons() >= 2) {
+    // find polygon with smallest area
+    InsideValue s = findSmallest();
+    if (s == 0) break;
+
+    // connect smallest horizontally
+    if (fillHorizontal(s, mode)) {
+      if (setPolygonInsideValues() == 1)
+        break;
+
+      if (step)
+        break;
+
+      continue;
+    }
+
+    // connect smallest vertically
+    if (fillVertical(s, mode)) {
+      if (setPolygonInsideValues() == 1)
+        break;
+
+      if (step)
+        break;
+
+      continue;
+    }
+
+    // connect polygons across empty rows
+    if (fillDisconnectedRows()) {
+      if (setPolygonInsideValues() == 1)
+        break;
+
+      if (step)
+        break;
+
+      continue;
+    }
+
+    // connect polygons across empty columns
+    if (fillDisconnectedColumns()) {
+      if (setPolygonInsideValues() == 1)
+        break;
+
+      if (step)
+        break;
+
+      continue;
+    }
+
+    rc = false;
+
+    break;
+  }
+
+  setPolygonInsideValues();
+
+  return rc;
+}
+
+CXYValsInside::InsideValue
+CXYValsInside::
+findSmallest() const
+{
+  typedef std::map<InsideValue,double> IArea;
+
+  // get area of each unique cell value (non-zero)
+  IArea iarea;
+
+  for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
+    for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
+      InsideValue ival = inside_[ix][iy];
+
+      if (ival == 0)
+        continue;
+
+      iarea[ival] += CXYVals::area(ix, iy);
+    }
+  }
+
+  // find cell value with miniumum area
+  InsideValue minValue = 0;
+  double      minArea  = 0;
+
+  for (IArea::const_iterator p = iarea.begin(); p != iarea.end(); ++p) {
+    double area = (*p).second;
+
+    if (minValue == 0 || area < minArea) {
+      minValue = (*p).first;
+      minArea  = area;
+    }
+  }
+
+  return minValue;
+}
+
+bool
+CXYValsInside::
+fillHorizontal(InsideValue val, FillMode mode)
+{
+  int x1, y1, x2, y2;
+
+  polygonBounds(val, x1, y1, x2, y2);
+
+  //---
+
   bool found = false;
 
   for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
@@ -1104,10 +1240,10 @@ fillH()
       continue;
 
     while (ix < num_xvals_ - 1) {
-      InsideValue val = inside_[ix][iy];
+      InsideValue val1 = inside_[ix][iy];
 
       // skip to last non-zero
-      while (ix < num_xvals_ - 1 && inside_[ix][iy] == val)
+      while (ix < num_xvals_ - 1 && inside_[ix][iy] == val1)
         ++ix;
 
       if (ix >= num_xvals_ - 1 || inside_[ix][iy])
@@ -1125,13 +1261,46 @@ fillH()
       int ix2 = ix - 1;
 
       // must be different value
-      if (inside_[ix][iy] == val)
+      InsideValue val2 = inside_[ix][iy];
+
+      if (val1 == val2)
         continue;
 
+      // if specified value then one needs to match
+      if (val1 != val && val2 != val)
+        continue;
+
+      // must fill from bounding edge to bounding edge
+      if (mode == FILL_OUT) {
+        if (val1 == val) {
+          if (ix1 != x2)
+            continue;
+
+          int x3, y3, x4, y4;
+
+          polygonBounds(val2, x3, y3, x4, y4);
+
+          if (ix2 + 1 != x3)
+            continue;
+        }
+        else {
+          if (ix2 + 1 != x1)
+            continue;
+
+          int x3, y3, x4, y4;
+
+          polygonBounds(val1, x3, y3, x4, y4);
+
+          if (ix1 != x4)
+            continue;
+        }
+      }
+
+      // fill zero values
       for (int ii = ix1; ii <= ix2; ++ii)
         inside_[ii][iy] = val;
 
-      found  = true;
+      found = true;
     }
   }
 
@@ -1140,8 +1309,14 @@ fillH()
 
 bool
 CXYValsInside::
-fillV()
+fillVertical(InsideValue val, FillMode mode)
 {
+  int x1, y1, x2, y2;
+
+  polygonBounds(val, x1, y1, x2, y2);
+
+  //---
+
   bool found = false;
 
   for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
@@ -1155,10 +1330,10 @@ fillV()
       continue;
 
     while (iy < num_yvals_ - 1) {
-      InsideValue val = inside_[ix][iy];
+      InsideValue val1 = inside_[ix][iy];
 
       // skip to last non-zero
-      while (iy < num_yvals_ - 1 && inside_[ix][iy] == val)
+      while (iy < num_yvals_ - 1 && inside_[ix][iy] == val1)
         ++iy;
 
       if (iy >= num_yvals_ - 1 || inside_[ix][iy])
@@ -1176,9 +1351,42 @@ fillV()
       int iy2 = iy - 1;
 
       // must be different value
-      if (inside_[ix][iy] == val)
+      InsideValue val2 = inside_[ix][iy];
+
+      if (val1 == val2)
         continue;
 
+      // if specified value then one needs to match
+      if (val1 != val && val2 != val)
+        continue;
+
+      // must fill from bounding edge to bounding edge
+      if (mode == FILL_OUT) {
+        if (val1 == val) {
+          if (iy1 != y2)
+            continue;
+
+          int x3, y3, x4, y4;
+
+          polygonBounds(val2, x3, y3, x4, y4);
+
+          if (iy2 + 1 != y3)
+            continue;
+        }
+        else {
+          if (iy2 + 1 != y1)
+            continue;
+
+          int x3, y3, x4, y4;
+
+          polygonBounds(val1, x3, y3, x4, y4);
+
+          if (iy1 != y4)
+            continue;
+        }
+      }
+
+      // fill zero values
       for (int jj = iy1; jj <= iy2; ++jj)
         inside_[ix][jj] = val;
 
@@ -1189,33 +1397,29 @@ fillV()
   return found;
 }
 
-bool
+void
 CXYValsInside::
-fillHoles()
+polygonBounds(InsideValue val, int &x1, int &y1, int &x2, int &y2) const
 {
-  if (num_xvals_ <= 0 || num_yvals_ <= 0)
-    return false;
+  // find indices of edges of polygon of specified value
+  x1 = -1; y1 = -1;
+  x2 = -1; y2 = -1;
 
-  int nf = 0;
-
-  for (int iy = 1; iy < num_yvals_ - 2; ++iy) {
-    for (int ix = 1; ix < num_xvals_ - 2; ++ix) {
-      if (! inside_[ix][iy] &&
-          inside_[ix - 1][iy] && inside_[ix + 1][iy] &&
-          inside_[ix][iy - 1] && inside_[ix][iy + 1]) {
-        inside_[ix][iy] = 1;
-
-        ++nf;
+  for (int iy = 0; iy < num_yvals_ - 1; ++iy) {
+    for (int ix = 0; ix < num_xvals_ - 1; ++ix) {
+      if (inside_[ix][iy] == val) {
+        if (x1 == -1 || ix     < x1) x1 = ix;
+        if (y1 == -1 || iy     < y1) y1 = iy;
+        if (x2 == -1 || ix + 1 > x2) x2 = ix + 1;
+        if (y2 == -1 || iy + 1 > y2) y2 = iy + 1;
       }
     }
   }
-
-  return (nf > 0);
 }
 
-void
+bool
 CXYValsInside::
-fillDisconnected()
+fillDisconnectedRows()
 {
   // find empty row (must be one)
   int iy = 0;
@@ -1225,7 +1429,8 @@ fillDisconnected()
       break;
 
   // must be found and not first or last
-  assert(iy > 0 && iy < num_yvals_ - 2);
+  if (iy <= 0 || iy >= num_yvals_ - 2)
+    return false;
 
   // find end of first block on previous row
   int ix1 = 0;
@@ -1244,8 +1449,6 @@ fillDisconnected()
     if (inside_[ix2][iy + 1])
       break;
 
-  assert(ix1 != ix2);
-
   if (ix1 < ix2) {
     for (int ix = ix1; ix <= ix2; ++ix)
       inside_[ix][iy] = 1;
@@ -1255,16 +1458,75 @@ fillDisconnected()
       inside_[ix][iy] = 1;
   }
 
-  print(std::cerr); std::cerr << std::endl;
+  return true;
+}
+
+bool
+CXYValsInside::
+fillDisconnectedColumns()
+{
+  // find empty column (must be one)
+  int ix = 0;
+
+  for ( ; ix < num_xvals_ - 1; ++ix)
+    if (isEmptyColumn(ix))
+      break;
+
+  // must be found and not first or last
+  if (ix <= 0 || ix >= num_xvals_ - 2)
+    return false;
+
+  // find end of first block on previous column
+  int iy1 = 0;
+
+  for ( ; iy1 < num_yvals_ - 1; ++iy1)
+    if (inside_[ix - 1][iy1])
+      break;
+
+  while (iy1 < num_yvals_ - 2 && inside_[ix - 1][iy1 + 1])
+    ++iy1;
+
+  // find start of first block on next column
+  int iy2 = 0;
+
+  for ( ; iy2 < num_yvals_ - 1; ++iy2)
+    if (inside_[ix + 1][iy2])
+      break;
+
+  if (iy1 < iy2) {
+    for (int iy = iy1; iy <= iy2; ++iy)
+      inside_[ix][iy] = 1;
+  }
+  else {
+    for (int iy = iy2; iy <= iy1; ++iy)
+      inside_[ix][iy] = 1;
+  }
+
+  return true;
 }
 
 bool
 CXYValsInside::
 isEmptyRow(int iy) const
 {
+  // check if row is empty
   int num_x = getNumXVals();
 
   for (int ix = 0; ix < num_x - 1; ++ix)
+    if (inside_[ix][iy])
+      return false;
+
+  return true;
+}
+
+bool
+CXYValsInside::
+isEmptyColumn(int ix) const
+{
+  // check if column is empty
+  int num_y = getNumYVals();
+
+  for (int iy = 0; iy < num_y - 1; ++iy)
     if (inside_[ix][iy])
       return false;
 
