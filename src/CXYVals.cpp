@@ -7,23 +7,27 @@
 
 namespace {
 
+// absolute value of integer or real
 template<typename T>
 T abs(T v) {
   return (v > T(0) ? v : -v);
 }
 
+// average value of two integers or reals
 template<typename T>
 T avg(T v1, T v2) {
   return (v1 + v2)/T(2);
 }
 
+// check if two reals are equal for tolerance
 template<typename T>
-bool realEq(T r1, T r2, T tol=1E-3) {
+bool realEq(T r1, T r2, T tol=1E-4) {
   if (r1 == r2 || abs(r1 - r2) < tol) return true;
 
   return (abs((r1 - r2)/(abs(r2) > abs(r1) ? r2 : r1)) <= tol);
 }
 
+// check if point is inside polygon (count number of intersections of horizontal line)
 bool PointInsideEvenOdd(double x, double y, const double *xp, const double *yp, int np) {
   double xinters, x1, y1, x2, y2;
 
