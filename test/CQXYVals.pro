@@ -4,6 +4,8 @@ TARGET = CQXYVals
 
 DEPENDPATH += .
 
+MOC_DIR = .moc
+
 QT += widgets
 
 QMAKE_CXXFLAGS += -std=c++11
