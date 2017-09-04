@@ -12,7 +12,7 @@
  */
 class CXYVals {
  public:
-  enum FillMode {
+  enum class FillMode {
     FILL_OUT,
     FILL_ALL
   };
@@ -192,9 +192,10 @@ class CXYValsInside : public CXYVals {
     return (inside_[ix][iy] == val);
   }
 
-  InsideValue insideVal(int ix, int iy) const { return inside_[ix][iy]; }
-
   void setInside(InsideValue val=INSIDE1);
+
+  InsideValue insideVal(int ix, int iy) const { return inside_[ix][iy]; }
+  void setInsideVal(int ix, int iy, InsideValue val=INSIDE1);
 
   void combineInside(InsideValue val=INSIDE1);
 

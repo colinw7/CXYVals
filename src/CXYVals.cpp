@@ -570,6 +570,13 @@ setInside(InsideValue val)
 
 void
 CXYValsInside::
+setInsideVal(int ix, int iy, InsideValue val)
+{
+  inside_[ix][iy] = val;
+}
+
+void
+CXYValsInside::
 combineInside(InsideValue val)
 {
   // set all inside values to specified value if non-zero
@@ -1111,10 +1118,10 @@ bool
 CXYValsInside::
 fill(bool step)
 {
-  if (fill1(step, FILL_OUT))
+  if (fill1(step, FillMode::FILL_OUT))
     return true;
 
-  if (fill1(step, FILL_ALL))
+  if (fill1(step, FillMode::FILL_ALL))
     return true;
 
   return false;
@@ -1275,7 +1282,7 @@ fillHorizontal(InsideValue val, FillMode mode)
         continue;
 
       // must fill from bounding edge to bounding edge
-      if (mode == FILL_OUT) {
+      if (mode == FillMode::FILL_OUT) {
         if (val1 == val) {
           if (ix1 != x2)
             continue;
@@ -1365,7 +1372,7 @@ fillVertical(InsideValue val, FillMode mode)
         continue;
 
       // must fill from bounding edge to bounding edge
-      if (mode == FILL_OUT) {
+      if (mode == FillMode::FILL_OUT) {
         if (val1 == val) {
           if (iy1 != y2)
             continue;
