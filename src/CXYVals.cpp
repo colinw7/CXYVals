@@ -737,9 +737,9 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
 
         //std::cerr << "Loop from " << ii << " to " << num_xy_ << std::endl;
 
-        for (int i = ii; i < num_xy_; ++i) {
-          x_[i - ii] = x_[i];
-          y_[i - ii] = y_[i];
+        for (int i1 = ii; i1 < num_xy_; ++i1) {
+          x_[i1 - ii] = x_[i1];
+          y_[i1 - ii] = y_[i1];
         }
 
         num_xy_ -= ii;
@@ -829,15 +829,15 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
 
     if (r_ok) {
       // Walk left to right
-      int ix = ix2;
+      int iix = ix2;
 
-      for ( ; ix < num_xvals_ - 1; ++ix)
-        if (  POLY_IS_INSIDE(ix, iy2 - 1, inside_val) ||
-            ! POLY_IS_INSIDE(ix, iy2    , inside_val))
+      for ( ; iix < num_xvals_ - 1; ++iix)
+        if (  POLY_IS_INSIDE(iix, iy2 - 1, inside_val) ||
+            ! POLY_IS_INSIDE(iix, iy2    , inside_val))
           break;
 
-      if (ix > ix2) {
-        for ( ; ix2 < ix; ++ix2)
+      if (iix > ix2) {
+        for ( ; ix2 < iix; ++ix2)
           edgeList.addEdge(ix2, iy2, ix2 + 1, iy2);
 
         if (ix1 == ix2 && iy1 == iy2)
@@ -855,15 +855,15 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
 
     if (l_ok) {
       // Walk right to left
-      int ix = ix2;
+      int iix = ix2;
 
-      for ( ; ix >= 0; --ix)
-        if (! POLY_IS_INSIDE(ix - 1, iy2 - 1, inside_val) ||
-              POLY_IS_INSIDE(ix - 1, iy2    , inside_val))
+      for ( ; iix >= 0; --iix)
+        if (! POLY_IS_INSIDE(iix - 1, iy2 - 1, inside_val) ||
+              POLY_IS_INSIDE(iix - 1, iy2    , inside_val))
           break;
 
-      if (ix < ix2) {
-        for ( ; ix2 > ix; --ix2)
+      if (iix < ix2) {
+        for ( ; ix2 > iix; --ix2)
           edgeList.addEdge(ix2 - 1, iy2, ix2, iy2);
 
         if (ix1 == ix2 && iy1 == iy2)
@@ -884,15 +884,15 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
 
     if (u_ok) {
       // Walk bottom to top
-      int iy = iy2;
+      int iiy = iy2;
 
-      for ( ; iy < num_yvals_ - 1; ++iy)
-        if (! POLY_IS_INSIDE(ix2 - 1, iy, inside_val) ||
-              POLY_IS_INSIDE(ix2    , iy, inside_val))
+      for ( ; iiy < num_yvals_ - 1; ++iiy)
+        if (! POLY_IS_INSIDE(ix2 - 1, iiy, inside_val) ||
+              POLY_IS_INSIDE(ix2    , iiy, inside_val))
           break;
 
-      if (iy > iy2) {
-        for ( ; iy2 < iy; ++iy2)
+      if (iiy > iy2) {
+        for ( ; iy2 < iiy; ++iy2)
           edgeList.addEdge(ix2, iy2, ix2, iy2 + 1);
 
         if (ix1 == ix2 && iy1 == iy2)
@@ -910,15 +910,15 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
 
     if (d_ok) {
       // Walk top to bottom
-      int iy = iy2;
+      int iiy = iy2;
 
-      for ( ; iy >= 0; --iy)
-        if (  POLY_IS_INSIDE(ix2 - 1, iy - 1, inside_val) ||
-            ! POLY_IS_INSIDE(ix2    , iy - 1, inside_val))
+      for ( ; iiy >= 0; --iiy)
+        if (  POLY_IS_INSIDE(ix2 - 1, iiy - 1, inside_val) ||
+            ! POLY_IS_INSIDE(ix2    , iiy - 1, inside_val))
           break;
 
-      if (iy < iy2) {
-        for ( ; iy2 > iy; --iy2)
+      if (iiy < iy2) {
+        for ( ; iy2 > iiy; --iy2)
           edgeList.addEdge(ix2, iy2 - 1, ix2, iy2);
 
         if (ix1 == ix2 && iy1 == iy2)
