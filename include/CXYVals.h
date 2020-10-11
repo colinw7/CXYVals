@@ -59,9 +59,9 @@ class CXYVals {
     std::vector<double> y;
   };
 
-  typedef std::vector<Polygon> Polygons;
+  using Polygons = std::vector<Polygon>;
 
-  typedef std::pair<int,int> Coord;
+  using Coord = std::pair<int,int>;
 
  public:
   CXYVals(const Polygons &polygons);

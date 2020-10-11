@@ -540,7 +540,7 @@ class CXYEdge {
 
 class CXYEdgeList {
  private:
-  typedef std::set<CXYEdge> EdgeSet;
+  using EdgeSet = std::set<CXYEdge>;
 
   EdgeSet edgeSet_;
 
@@ -771,7 +771,7 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
     }
 
    private:
-    typedef std::map<Coord,int> Coords;
+    using Coords = std::map<Coord,int>;
 
     const CXYValsInside *inside_;
     std::vector<double>  x_, y_;
@@ -1196,7 +1196,7 @@ CXYValsInside::InsideValue
 CXYValsInside::
 findSmallest() const
 {
-  typedef std::map<InsideValue,double> IArea;
+  using IArea = std::map<InsideValue,double>;
 
   // get area of each unique cell value (non-zero)
   IArea iarea;
