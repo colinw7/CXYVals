@@ -207,8 +207,8 @@ init1(const Polygons &polygons)
   // Allocate return value for maximum possible size
   std::vector<double> xvals, yvals;
 
-  xvals.reserve(num_xy);
-  yvals.reserve(num_xy);
+  xvals.resize(num_xy);
+  yvals.resize(num_xy);
 
   int num_xvals = 0;
   int num_yvals = 0;
@@ -723,8 +723,8 @@ getPolygon(InsideValue inside_val, std::vector<double> &x, std::vector<double> &
      inside_(inside), num_xy_(0) {
       max_xy_ = inside_->numXVals()*inside_->numYVals();
 
-      x_.reserve(max_xy_);
-      y_.reserve(max_xy_);
+      x_.resize(max_xy_);
+      y_.resize(max_xy_);
     }
 
     bool addPoint(int i, int j) {
