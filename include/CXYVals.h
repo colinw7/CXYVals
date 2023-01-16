@@ -33,7 +33,7 @@ class CXYVals {
       memcpy(&y[0], y1, n1*sizeof(double));
     }
 
-    int size() const { return x.size(); }
+    int size() const { return int(x.size()); }
 
     bool isInside(double xm, double ym) const;
 
@@ -91,10 +91,10 @@ class CXYVals {
   double area(int ix, int iy) const { return xsize(ix)*ysize(iy); }
 
   const double *getXVals   () const { return &xvals_[0]; }
-  int           getNumXVals() const { return xvals_.size(); }
+  int           getNumXVals() const { return int(xvals_.size()); }
 
   const double *getYVals   () const { return &yvals_[0]; }
-  int           getNumYVals() const { return yvals_.size(); }
+  int           getNumYVals() const { return int(yvals_.size()); }
 
   void init(const Polygons &polygons);
 

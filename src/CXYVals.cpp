@@ -38,7 +38,7 @@ bool PointInsideEvenOdd(double x, double y, const double *xp, const double *yp, 
   x2 = xp[i2]; y2 = yp[i2];
 
   // iterate through all lines of the polygon
-  for (int i1 = 0; i1 < (int) np; i2 = i1++, x2 = x1, y2 = y1) {
+  for (int i1 = 0; i1 < int(np); i2 = i1++, x2 = x1, y2 = y1) {
     x1 = xp[i1]; y1 = yp[i1];
 
     // intersect current line with horizontal line at inside point
@@ -478,8 +478,8 @@ void
 CXYValsInside::
 initMem()
 {
-  num_xvals_ = xvals_.size();
-  num_yvals_ = yvals_.size();
+  num_xvals_ = int(xvals_.size());
+  num_yvals_ = int(yvals_.size());
 
   // create inside flag grid
   if (num_xvals_ > 0 && num_yvals_ > 0) {
@@ -701,7 +701,7 @@ getPolygon(InsideValue inside_val, double **xo, double **yo, int *num_xyo,
   if (rc) {
     if (xo     ) *xo      = &rect_temp_x[0];
     if (yo     ) *yo      = &rect_temp_y[0];
-    if (num_xyo) *num_xyo = rect_temp_x.size();
+    if (num_xyo) *num_xyo = int(rect_temp_x.size());
   }
   else {
     if (xo     ) *xo      = 0;
@@ -1049,7 +1049,7 @@ getNumPolygons() const
   if (! getPolygons(polygons))
     return 0;
 
-  return polygons.size();
+  return int(polygons.size());
 }
 
 int
@@ -1064,7 +1064,7 @@ setPolygonInsideValues()
 
   setPolygonInsideValues(polygons);
 
-  return polygons.size();
+  return int(polygons.size());
 }
 
 void
@@ -1563,7 +1563,7 @@ bool
 CXYValsInside::Polygon::
 isInside(double xm, double ym) const
 {
-  return PointInsideEvenOdd(xm, ym, &x[0], &y[0], x.size());
+  return PointInsideEvenOdd(xm, ym, &x[0], &y[0], int(x.size()));
 }
 
 //---------
