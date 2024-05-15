@@ -61,7 +61,7 @@ class CXYVals {
 
   using Polygons = std::vector<Polygon>;
 
-  using Coord = std::pair<int,int>;
+  using Coord = std::pair<int, int>;
 
  public:
   CXYVals(const Polygons &polygons);
@@ -73,7 +73,7 @@ class CXYVals {
   CXYVals(const std::vector<double> &x1, std::vector<double> &y1,
           const std::vector<double> &x2, std::vector<double> &y2);
 
-  CXYVals(const double *x=0, const double *y=0, int num_xy=0);
+  CXYVals(const double *x=nullptr, const double *y=nullptr, int num_xy=0);
   CXYVals(const double *x1, const double *y1, int num_xy1,
           const double *x2, const double *y2, int num_xy2);
 
@@ -110,6 +110,9 @@ class CXYVals {
             const double *x2, const double *y2, int num_xy2);
 
   void clear();
+
+  int xind(double x) const;
+  int yind(double y) const;
 
  protected:
   void init1(const Polygons &polygons);
@@ -149,7 +152,7 @@ class CXYValsInside : public CXYVals {
                 const std::vector<double> &x2, std::vector<double> &y2,
                 bool init=false);
 
-  CXYValsInside(const double *x=0, const double *y=0, int num_xy=0,
+  CXYValsInside(const double *x=nullptr, const double *y=nullptr, int num_xy=0,
                 bool init=false);
   CXYValsInside(const double *x1, const double *y1, int num_xy1,
                 const double *x2, const double *y2, int num_xy2,
@@ -262,7 +265,7 @@ class CXYValsInside : public CXYVals {
   InsideArray inside_;
   int         num_xvals_ { 0 };
   int         num_yvals_ { 0 };
-  bool        orValues_ { false };
+  bool        orValues_  { false };
 };
 
 #endif

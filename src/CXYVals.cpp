@@ -290,11 +290,39 @@ clear()
   yvals_.clear();
 }
 
+int
+CXYVals::
+xind(double x) const
+{
+  int num_xvals = getNumXVals();
+
+  for (int ix = 0; ix < num_xvals - 1; ++ix) {
+    if (x >= xvals_[ix] && x < xvals_[ix + 1])
+      return ix;
+  }
+
+  return -1;
+}
+
+int
+CXYVals::
+yind(double y) const
+{
+  int num_yvals = getNumYVals();
+
+  for (int iy = 0; iy < num_yvals - 1; ++iy) {
+    if (y >= yvals_[iy] && y < yvals_[iy + 1])
+      return iy;
+  }
+
+  return -1;
+}
+
 //------
 
 CXYValsInside::
 CXYValsInside(const Polygons &polygons, bool init) :
- CXYVals(polygons), num_xvals_(0), num_yvals_(0), orValues_(false)
+ CXYVals(polygons)
 {
   if (init)
     initValues(polygons);
@@ -304,7 +332,7 @@ CXYValsInside(const Polygons &polygons, bool init) :
 
 CXYValsInside::
 CXYValsInside(const Polygon &polygon, bool init) :
- CXYVals(polygon), num_xvals_(0), num_yvals_(0), orValues_(false)
+ CXYVals(polygon)
 {
   if (init)
     initValues(polygon);
@@ -314,7 +342,7 @@ CXYValsInside(const Polygon &polygon, bool init) :
 
 CXYValsInside::
 CXYValsInside(const Polygon &polygon1, const Polygon &polygon2, bool init) :
- CXYVals(polygon1, polygon2), num_xvals_(0), num_yvals_(0), orValues_(false)
+ CXYVals(polygon1, polygon2)
 {
   if (init)
     initValues(polygon1, polygon2);
@@ -324,7 +352,7 @@ CXYValsInside(const Polygon &polygon1, const Polygon &polygon2, bool init) :
 
 CXYValsInside::
 CXYValsInside(const std::vector<double> &x, std::vector<double> &y, bool init) :
- CXYVals(x, y), num_xvals_(0), num_yvals_(0), orValues_(false)
+ CXYVals(x, y)
 {
   if (init)
     initValues(x, y);
@@ -335,7 +363,7 @@ CXYValsInside(const std::vector<double> &x, std::vector<double> &y, bool init) :
 CXYValsInside::
 CXYValsInside(const std::vector<double> &x1, std::vector<double> &y1,
               const std::vector<double> &x2, std::vector<double> &y2, bool init) :
- CXYVals(x1, y1, x2, y2), num_xvals_(0), num_yvals_(0), orValues_(false)
+ CXYVals(x1, y1, x2, y2)
 {
   if (init)
     initValues(x1, y1, x2, y2);
@@ -345,7 +373,7 @@ CXYValsInside(const std::vector<double> &x1, std::vector<double> &y1,
 
 CXYValsInside::
 CXYValsInside(const double *x, const double *y, int num_xy, bool init) :
- CXYVals(x, y, num_xy), num_xvals_(0), num_yvals_(0), orValues_(false)
+ CXYVals(x, y, num_xy)
 {
   if (init)
     initValues(x, y, num_xy);
@@ -356,7 +384,7 @@ CXYValsInside(const double *x, const double *y, int num_xy, bool init) :
 CXYValsInside::
 CXYValsInside(const double *x1, const double *y1, int num_xy1,
               const double *x2, const double *y2, int num_xy2, bool init) :
- CXYVals(x1, y1, num_xy1, x2, y2, num_xy2), num_xvals_(0), num_yvals_(0), orValues_(false)
+ CXYVals(x1, y1, num_xy1, x2, y2, num_xy2)
 {
   if (init)
     initValues(x1, y1, num_xy1, x2, y2, num_xy2);
@@ -704,8 +732,8 @@ getPolygon(InsideValue inside_val, double **xo, double **yo, int *num_xyo,
     if (num_xyo) *num_xyo = int(rect_temp_x.size());
   }
   else {
-    if (xo     ) *xo      = 0;
-    if (yo     ) *yo      = 0;
+    if (xo     ) *xo      = nullptr;
+    if (yo     ) *yo      = nullptr;
     if (num_xyo) *num_xyo = 0;
   }
 
