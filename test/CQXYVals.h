@@ -10,13 +10,13 @@ class CQXYValsCanvas : public QWidget {
   CQXYValsCanvas(CQXYValsTest *text);
 
  private:
-  void paintEvent(QPaintEvent *);
+  void paintEvent(QPaintEvent *) override;
 
-  void mousePressEvent  (QMouseEvent *me);
-  void mouseMoveEvent   (QMouseEvent *me);
-  void mouseReleaseEvent(QMouseEvent *me);
+  void mousePressEvent  (QMouseEvent *me) override;
+  void mouseMoveEvent   (QMouseEvent *me) override;
+  void mouseReleaseEvent(QMouseEvent *me) override;
 
-  void keyPressEvent(QKeyEvent *);
+  void keyPressEvent(QKeyEvent *) override;
 
   void updatePolygons();
   void getPolygons();

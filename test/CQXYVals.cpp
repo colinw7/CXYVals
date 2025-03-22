@@ -51,7 +51,7 @@ CQXYValsTest()
 
 CQXYValsCanvas::
 CQXYValsCanvas(CQXYValsTest *test) :
- QWidget(0), test_(test)
+ QWidget(nullptr), test_(test)
 {
   setObjectName("canvas");
 
@@ -182,7 +182,7 @@ paintEvent(QPaintEvent *)
 
     QString text = QString("%1 (%2)").arg(val).arg(area);
 
-    int tw = fm.width(text);
+    int tw = fm.horizontalAdvance(text);
 
     painter.setPen(Qt::black);
 
